@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  tests:
+    name: Tests (PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.2'
+            laravel: '11.*'
+            testbench: '9.*'
+          - php: '8.3'
+            laravel: '12.*'
+            testbench: '10.*'
+          - php: '8.4'
+            laravel: '13.*'
+            testbench: '11.*'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: openssl, json
+          coverage: none
+
+      - name: Set Laravel version
+        run: composer require --no-update --dev orchestra/testbench:"${{ matrix.testbench }}"
+
+      - name: Install composer dependencies
+        run: composer install --prefer-dist --no-interaction
+
+      - name: Run tests
+        run: bin/phpunit
+
+  static-analysis:
+    name: PHPStan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: openssl, json
+          coverage: none
+
+      - name: Install composer dependencies
+        run: composer install --prefer-dist --no-interaction
+
+      - name: Run PHPStan
+        run: bin/phpstan analyse --memory-limit=512M
