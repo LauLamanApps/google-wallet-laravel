@@ -33,10 +33,14 @@ php artisan vendor:publish --tag=google-wallet-config
 
 This creates `config/google-wallet.php`:
 
-| Key               | Default                               | Description                                                                       |
-|-------------------|---------------------------------------|-----------------------------------------------------------------------------------|
-| `service_account` | `env('GOOGLE_WALLET_SERVICE_ACCOUNT')` | Path to the Google Cloud service account JSON key file used to sign the JWTs      |
-| `origins`         | `[]`                                  | Origins allowed to render the save urls; leave empty to allow opening from anywhere |
+| Key                     | Default                                       | Description                                                                       |
+|-------------------------|-----------------------------------------------|-----------------------------------------------------------------------------------|
+| `service_account`       | `env('GOOGLE_WALLET_SERVICE_ACCOUNT')`         | Path to the Google Cloud service account JSON key file used to sign the JWTs      |
+| `origins`               | `[]`                                          | Origins allowed to render the save urls; leave empty to allow opening from anywhere |
+| `callback.enabled`      | `env('GOOGLE_WALLET_CALLBACK_ENABLED', false)` | Expose the save/delete callback endpoint (see below)                              |
+| `callback.issuer_id`    | `env('GOOGLE_WALLET_ISSUER_ID')`               | Your issuer id; required when callbacks are enabled (signatures are verified against it) |
+| `callback.environment`  | `'production'`                                | `'production'` or `'test'`: which Google root signing keys to verify against      |
+| `callback.route_prefix` | `'/google-wallet'`                            | Prefix for the callback route                                                     |
 
 Add the ENV variable to your `.env` file:
 ```dotenv
@@ -93,6 +97,47 @@ Render the url as an [Add to Google Wallet button][GoogleWalletBrandGuidelines] 
 
 See the [core package documentation][LauLamanAppsGoogleWalletPackage] for all pass types (generic, event ticket, offer, loyalty, transit), fields, images and colors.
 The service provider also registers `LauLamanApps\GoogleWallet\ServiceAccount` and `LauLamanApps\GoogleWallet\JwtSigner` as singletons in case you want to sign a JWT yourself.
+
+Save/delete callbacks
+---
+Google can notify your application whenever a user saves or deletes a pass. Enable the callback endpoint in your `.env` file:
+
+```dotenv
+###> laulamanapps/google-wallet-laravel ###
+GOOGLE_WALLET_CALLBACK_ENABLED=true
+GOOGLE_WALLET_ISSUER_ID=3388000000012345678
+###< laulamanapps/google-wallet-laravel ###
+```
+
+When enabled, the package exposes `POST /google-wallet/callback` (route name `google-wallet.callback`; change the prefix with the `callback.route_prefix` config key). Point Google at it by setting the callback url on your pass classes — it is available on all five class types and must be `https://`:
+
+```php
+$class = new GenericClass('3388000000012345678.membership');
+$class->setCallbackUrl('https://example.com/google-wallet/callback');
+// or: $class->setCallbackUrl(route('google-wallet.callback'));
+```
+
+Every incoming callback is verified before anything is dispatched: the endpoint is public and anyone can POST to it, so the controller runs the raw request body through the core package's `CallbackVerifier` (Google's `ECv2SigningOnly` signature scheme, checked against your issuer id and Google's root signing keys). Requests that do not verify are logged at warning level and rejected with a `400` — no event is dispatched for them. Set the `callback.environment` config key to `'test'` to verify against Google's test root signing keys during integration testing.
+
+Verified callbacks dispatch a Laravel event: `LauLamanApps\GoogleWalletLaravel\Events\PassSavedEvent` when a user saves a pass and `LauLamanApps\GoogleWalletLaravel\Events\PassDeletedEvent` when a user deletes one. Listen to them like any other event:
+
+```php
+namespace App\Listeners;
+
+use LauLamanApps\GoogleWalletLaravel\Events\PassSavedEvent;
+
+final class MarkPassAsSaved
+{
+    public function handle(PassSavedEvent $event): void
+    {
+        $event->getObjectId();      // '3388000000012345678.member-0001'
+        $event->getClassId();       // '3388000000012345678.membership'
+        $event->getCallbackEvent(); // the verified LauLamanApps\GoogleWallet\Callback\CallbackEvent
+    }
+}
+```
+
+Callbacks are delivered at least once and may arrive more than once: use `$event->getCallbackEvent()->getNonce()` to deduplicate.
 
 Credits
 ---

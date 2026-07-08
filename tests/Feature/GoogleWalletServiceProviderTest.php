@@ -29,6 +29,10 @@ final class GoogleWalletServiceProviderTest extends TestCase
     {
         self::assertNull(config('google-wallet.service_account'));
         self::assertSame([], config('google-wallet.origins'));
+        self::assertFalse(config('google-wallet.callback.enabled'));
+        self::assertNull(config('google-wallet.callback.issuer_id'));
+        self::assertSame('production', config('google-wallet.callback.environment'));
+        self::assertSame('/google-wallet', config('google-wallet.callback.route_prefix'));
     }
 
     #[Test]

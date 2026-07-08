@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace LauLamanApps\GoogleWalletLaravel;
 
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use LauLamanApps\GoogleWallet\Callback\CallbackVerifier;
+use LauLamanApps\GoogleWallet\Callback\GoogleKeyProvider;
 use LauLamanApps\GoogleWallet\JwtSigner;
 use LauLamanApps\GoogleWallet\SaveUrlFactory;
 use LauLamanApps\GoogleWallet\ServiceAccount;
@@ -49,6 +52,45 @@ final class GoogleWalletServiceProvider extends ServiceProvider
         });
 
         $this->app->alias(SaveUrlFactory::class, 'google-wallet.save-url-factory');
+
+        $this->app->singleton(GoogleKeyProvider::class, static function (Container $app): GoogleKeyProvider {
+            /** @var \Illuminate\Contracts\Config\Repository $config */
+            $config = $app->make('config');
+
+            $environment = $config->get('google-wallet.callback.environment', 'production');
+
+            return match ($environment) {
+                'production' => GoogleKeyProvider::production(),
+                'test' => GoogleKeyProvider::test(),
+                default => throw new RuntimeException(
+                    'Invalid Google Wallet callback environment. Set the "google-wallet.callback.environment" ' .
+                    'config key to either "production" or "test".'
+                ),
+            };
+        });
+
+        $this->app->singleton(CallbackVerifier::class, static function (Container $app): CallbackVerifier {
+            /** @var \Illuminate\Contracts\Config\Repository $config */
+            $config = $app->make('config');
+
+            $issuerId = $config->get('google-wallet.callback.issuer_id');
+            if (!is_string($issuerId) && !is_int($issuerId)) {
+                throw new RuntimeException(
+                    'No Google Wallet issuer id configured. Set the "google-wallet.callback.issuer_id" config key ' .
+                    '(GOOGLE_WALLET_ISSUER_ID) to your issuer id; callback signatures are verified against it.'
+                );
+            }
+
+            $issuerId = (string) $issuerId;
+            if ($issuerId === '') {
+                throw new RuntimeException(
+                    'No Google Wallet issuer id configured. Set the "google-wallet.callback.issuer_id" config key ' .
+                    '(GOOGLE_WALLET_ISSUER_ID) to your issuer id; callback signatures are verified against it.'
+                );
+            }
+
+            return new CallbackVerifier($issuerId, $app->make(GoogleKeyProvider::class));
+        });
     }
 
     public function boot(): void
@@ -56,5 +98,18 @@ final class GoogleWalletServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../config/google-wallet.php' => $this->app->configPath('google-wallet.php'),
         ], 'google-wallet-config');
+
+        if ($this->app->make('config')->get('google-wallet.callback.enabled')) {
+            $this->registerCallbackRoutes();
+        }
+    }
+
+    private function registerCallbackRoutes(): void
+    {
+        $prefix = (string) $this->app->make('config')->get('google-wallet.callback.route_prefix', '/google-wallet');
+
+        Route::group(['prefix' => trim($prefix, '/')], function (): void {
+            $this->loadRoutesFrom(__DIR__ . '/../routes/callback.php');
+        });
     }
 }

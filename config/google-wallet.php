@@ -26,4 +26,24 @@ return [
     |
     */
     'origins' => [],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Save/delete callbacks
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, the package exposes a POST '{route_prefix}/callback'
+    | endpoint (route name 'google-wallet.callback') that verifies the signed
+    | Google Wallet save/delete callbacks and dispatches PassSavedEvent /
+    | PassDeletedEvent. Signature verification requires your issuer id. Set
+    | 'environment' to 'test' to verify against Google's test root signing
+    | keys instead of the production keys.
+    |
+    */
+    'callback' => [
+        'enabled' => env('GOOGLE_WALLET_CALLBACK_ENABLED', false),
+        'issuer_id' => env('GOOGLE_WALLET_ISSUER_ID'),
+        'environment' => 'production',
+        'route_prefix' => '/google-wallet',
+    ],
 ];
