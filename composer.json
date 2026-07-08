@@ -1,0 +1,64 @@
+{
+    "name": "laulamanapps/google-wallet-laravel",
+    "description": "Google Wallet integration for your Laravel application",
+    "keywords": [
+        "google",
+        "wallet",
+        "pass",
+        "php",
+        "laravel",
+        "event ticket",
+        "coupon",
+        "loyalty",
+        "transit",
+        "android"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Laurens Laman",
+            "email": "laurens.laman@llaman.nl"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../google-wallet",
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "LauLamanApps\\GoogleWalletLaravel\\": ["src/"]
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "LauLamanApps\\GoogleWalletLaravel\\Tests\\": ["tests/"]
+        }
+    },
+    "require": {
+        "php": "^8.1",
+        "laulamanapps/google-wallet": "*",
+        "illuminate/support": "^11.0 || ^12.0 || ^13.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.5 || ^10.0 || ^11.0",
+        "phpunit/phpunit": "^11.0",
+        "phpstan/phpstan": "^2.0"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "bin-dir": "bin"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "LauLamanApps\\GoogleWalletLaravel\\GoogleWalletServiceProvider"
+            ]
+        }
+    }
+}

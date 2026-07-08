@@ -1,0 +1,11 @@
+cache/
+coverage/
+composer
+composer.lock
+.idea/
+.php_cs.cache
+vendor/
+bin/*
+.phpunit.result.cache
+.phpunit.cache/
+var/
