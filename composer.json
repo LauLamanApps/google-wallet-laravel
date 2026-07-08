@@ -54,6 +54,9 @@
             "providers": [
                 "LauLamanApps\\GoogleWalletLaravel\\GoogleWalletServiceProvider"
             ]
+        },
+        "branch-alias": {
+            "dev-main": "1.0.x-dev"
         }
     }
 }
