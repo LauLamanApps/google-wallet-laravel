@@ -20,28 +20,23 @@
             "email": "laurens.laman@llaman.nl"
         }
     ],
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../google-wallet",
-            "options": {
-                "symlink": true
-            }
-        }
-    ],
     "autoload": {
         "psr-4": {
-            "LauLamanApps\\GoogleWalletLaravel\\": ["src/"]
+            "LauLamanApps\\GoogleWalletLaravel\\": [
+                "src/"
+            ]
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "LauLamanApps\\GoogleWalletLaravel\\Tests\\": ["tests/"]
+            "LauLamanApps\\GoogleWalletLaravel\\Tests\\": [
+                "tests/"
+            ]
         }
     },
     "require": {
         "php": "^8.1",
-        "laulamanapps/google-wallet": "*",
+        "laulamanapps/google-wallet": "^1.0",
         "illuminate/support": "^11.0 || ^12.0 || ^13.0"
     },
     "require-dev": {
